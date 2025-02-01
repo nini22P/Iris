@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:app_links/app_links.dart';
+import 'package:fvp/fvp.dart' as fvp;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -26,7 +27,13 @@ void main(List<String> arguments) async {
   globals.arguments = arguments;
 
   WidgetsFlutterBinding.ensureInitialized();
+
   MediaKit.ensureInitialized();
+
+  fvp.registerWith(options: {
+    if (Platform.isAndroid)
+      'subtitleFontFile': 'assets/fonts/NotoSansCJKsc-Medium.otf',
+  });
 
   final appLinks = AppLinks();
   final initUri = await appLinks.getInitialLinkString();

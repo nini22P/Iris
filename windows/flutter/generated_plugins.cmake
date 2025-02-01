@@ -9,6 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_secure_storage_windows
   flutter_volume_controller
+  fvp
   media_kit_libs_windows_video
   media_kit_video
   permission_handler_windows

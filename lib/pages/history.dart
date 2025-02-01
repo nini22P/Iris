@@ -4,6 +4,7 @@ import 'package:flutter_zustand/flutter_zustand.dart';
 import 'package:iris/models/file.dart';
 import 'package:iris/models/progress.dart';
 import 'package:iris/models/storages/storage.dart';
+import 'package:iris/store/use_app_store.dart';
 import 'package:iris/store/use_history_store.dart';
 import 'package:iris/store/use_play_queue_store.dart';
 import 'package:iris/utils/file_size_convert.dart';
@@ -27,6 +28,8 @@ class History extends HookWidget {
     }, [history]);
 
     Future<void> play(int index) async {
+      await useAppStore().updateAutoPlay(true);
+
       final playQueue = historyList
           .asMap()
           .map((index, entry) => MapEntry(
@@ -103,7 +106,7 @@ class History extends HookWidget {
                           (subtitleType) => Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               CustomChip(
                                 text: subtitleType,
                                 primary: true,

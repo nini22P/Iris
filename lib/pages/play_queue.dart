@@ -122,7 +122,7 @@ class PlayQueue extends HookWidget {
                           (subtitleType) => Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               CustomChip(
                                 text: subtitleType,
                                 primary: true,
@@ -159,11 +159,13 @@ class PlayQueue extends HookWidget {
                       ),
                   ],
                 ),
-                onTap: () {
-                  useAppStore().updateAutoPlay(true);
+                onTap: () async {
+                  await useAppStore().updateAutoPlay(true);
                   usePlayQueueStore()
                       .updateCurrentIndex(playQueue[index].index);
-                  Navigator.of(context).pop();
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 },
               ),
               itemScrollController: itemScrollController,

@@ -1,3 +1,7 @@
+import java.io.File
+import java.nio.file.Files
+import java.security.MessageDigest
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
@@ -57,3 +61,42 @@ android {
 flutter {
     source = "../.."
 }
+
+
+task downloadFiles(type: Exec) {
+    def filesToDownload = [
+        [
+            "url": "https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Medium.otf",
+            "md5": "58c83279d990b2cf88d40a0a34832e31",
+            "destination": file("./src/main/assets/flutter_assets/assets/fonts/NotoSansCJKsc-Medium.otf")
+        ]
+    ]
+
+    filesToDownload.each { fileInfo ->
+        def destFile = fileInfo.destination
+
+        if (destFile.exists()) {
+           def calculatedMD5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(destFile.toPath())).encodeHex().toString()
+
+            if (calculatedMD5 != fileInfo.md5) {
+                destFile.delete()
+                println "MD5 mismatch. File deleted: ${destFile}"
+            }
+        }
+
+        if (!destFile.exists()) {
+             destFile.parentFile.mkdirs()
+            println "Downloading file from: ${fileInfo.url}"
+            destFile.withOutputStream { os ->
+                os << new URL(fileInfo.url).openStream()
+            }
+
+             def calculatedMD5 = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(destFile.toPath())).encodeHex().toString()
+            if (calculatedMD5 != fileInfo.md5) {
+                throw new GradleException("MD5 verification failed for ${destFile}")
+            }
+        }
+    }
+}
+
+assemble.dependsOn(downloadFiles)

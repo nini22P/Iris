@@ -47,6 +47,7 @@ CustomTheme getTheme({
     useMaterial3: true,
     textTheme: GoogleFonts.notoSansScTextTheme(),
     popupMenuTheme: baseTheme(context).popupMenuTheme,
+    dropdownMenuTheme: baseTheme(context).dropdownMenuTheme,
     listTileTheme: baseTheme(context).listTileTheme,
   );
 
@@ -58,6 +59,7 @@ CustomTheme getTheme({
           .textTheme,
     ),
     popupMenuTheme: baseTheme(context).popupMenuTheme,
+    dropdownMenuTheme: baseTheme(context).dropdownMenuTheme,
     listTileTheme: baseTheme(context).listTileTheme,
   );
 

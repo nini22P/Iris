@@ -83,6 +83,26 @@ class AppStore extends PersistentStore<AppState> {
     await save(state);
   }
 
+  Future<void> updatePlayerBackend(PlayerBackend backend) async {
+    set(state.copyWith(playerBackend: backend));
+    await save(state);
+  }
+
+  Future<void> updateSortBy(SortBy sortBy) async {
+    set(state.copyWith(sortBy: sortBy));
+    await save(state);
+  }
+
+  Future<void> updateSortOrder(SortOrder sortOrder) async {
+    set(state.copyWith(sortOrder: sortOrder));
+    await save(state);
+  }
+
+  Future<void> updateFolderFirst(bool folderFirst) async {
+    set(state.copyWith(folderFirst: folderFirst));
+    await save(state);
+  }
+
   @override
   Future<AppState?> load() async {
     logger('Loading AppState');

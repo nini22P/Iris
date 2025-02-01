@@ -1,18 +1,16 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_zustand/flutter_zustand.dart';
-import 'package:iris/hooks/use_player_controller.dart';
-import 'package:iris/hooks/use_player_core.dart';
+import 'package:iris/models/player.dart';
 import 'package:iris/models/storages/local.dart';
 import 'package:iris/models/store/app_state.dart';
 import 'package:iris/pages/dialog/show_open_link_dialog.dart';
 import 'package:iris/pages/player/control_bar_slider.dart';
 import 'package:iris/pages/history.dart';
 import 'package:iris/pages/show_open_link_bottom_sheet.dart';
-import 'package:iris/pages/subtitle_and_audio_track.dart';
 import 'package:iris/pages/settings/settings.dart';
+import 'package:iris/pages/subtitle_and_audio_track.dart';
 import 'package:iris/store/use_app_store.dart';
 import 'package:iris/store/use_play_queue_store.dart';
 import 'package:iris/utils/get_localizations.dart';
@@ -26,21 +24,18 @@ import 'package:window_manager/window_manager.dart';
 class ControlBar extends HookWidget {
   const ControlBar({
     super.key,
-    required this.playerCore,
+    required this.player,
     required this.showControl,
     required this.showControlForHover,
   });
 
-  final PlayerCore playerCore;
+  final MediaPlayer player;
   final void Function() showControl;
   final Future<void> Function(Future<void> callback) showControlForHover;
 
   @override
   Widget build(BuildContext context) {
     final t = getLocalizations(context);
-
-    final PlayerController playerController =
-        usePlayerController(context, playerCore);
 
     final int playQueueLength =
         usePlayQueueStore().select(context, (state) => state.playQueue.length);
@@ -77,7 +72,7 @@ class ControlBar extends HookWidget {
             Visibility(
               visible: MediaQuery.of(context).size.width < 960 || !isDesktop,
               child: ControlBarSlider(
-                playerCore: playerCore,
+                player: player,
                 showControl: showControl,
               ),
             ),
@@ -98,25 +93,25 @@ class ControlBar extends HookWidget {
                         ? null
                         : () {
                             showControl();
-                            playerController.previous();
+                            usePlayQueueStore().previous();
                           },
                   ),
                 ),
                 IconButton(
                   tooltip:
-                      '${playerCore.playing == true ? t.pause : t.play} ( Space )',
+                      '${player.isPlaying == true ? t.pause : t.play} ( Space )',
                   icon: Icon(
-                    playerCore.playing == true
+                    player.isPlaying == true
                         ? Icons.pause_rounded
                         : Icons.play_arrow_rounded,
                     size: 36,
                   ),
                   onPressed: () {
                     showControl();
-                    if (playerCore.playing == true) {
-                      playerController.pause();
+                    if (player.isPlaying == true) {
+                      player.pause();
                     } else {
-                      playerController.play();
+                      player.play();
                     }
                   },
                 ),
@@ -132,7 +127,7 @@ class ControlBar extends HookWidget {
                         ? null
                         : () {
                             showControl();
-                            playerController.next();
+                            usePlayQueueStore().next();
                           },
                   ),
                 ),
@@ -151,8 +146,8 @@ class ControlBar extends HookWidget {
                     onPressed: () {
                       showControl();
                       shuffle
-                          ? playerController.sortPlayQueue()
-                          : playerController.shufflePlayQueue();
+                          ? usePlayQueueStore().sort()
+                          : usePlayQueueStore().shuffle();
                       useAppStore().updateShuffle(!shuffle);
                     },
                   ),
@@ -203,7 +198,7 @@ class ControlBar extends HookWidget {
                     visible:
                         MediaQuery.of(context).size.width >= 960 && isDesktop,
                     child: ControlBarSlider(
-                      playerCore: playerCore,
+                      player: player,
                       showControl: showControl,
                     ),
                   ),
@@ -265,7 +260,7 @@ class ControlBar extends HookWidget {
                     showControlForHover(
                       showPopup(
                         context: context,
-                        child: SubtitleAndAudioTrack(playerCore: playerCore),
+                        child: SubtitleAndAudioTrack(player: player),
                         direction: PopupDirection.right,
                       ),
                     );
@@ -294,7 +289,7 @@ class ControlBar extends HookWidget {
                           showControl();
                           if (isFullScreen) {
                             await windowManager.setFullScreen(false);
-                            await resizeWindow(playerCore.videoParams?.aspect);
+                            await resizeWindow(player.aspect);
                           } else {
                             await windowManager.setFullScreen(true);
                           }
@@ -407,8 +402,8 @@ class ControlBar extends HookWidget {
                         onTap: () {
                           showControl();
                           shuffle
-                              ? playerController.sortPlayQueue()
-                              : playerController.shufflePlayQueue();
+                              ? usePlayQueueStore().sort()
+                              : usePlayQueueStore().shuffle();
                           useAppStore().updateShuffle(!shuffle);
                         },
                       ),

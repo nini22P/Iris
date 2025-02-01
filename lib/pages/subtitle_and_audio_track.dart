@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:iris/hooks/use_player_core.dart';
-import 'package:iris/pages/audio_tracks.dart';
-import 'package:iris/pages/subtitles.dart';
+import 'package:iris/models/player.dart';
+import 'package:iris/pages/audio_track_list.dart';
+import 'package:iris/pages/subtitle_list.dart';
 import 'package:iris/utils/get_localizations.dart';
 
 class ITab {
@@ -16,17 +16,17 @@ class ITab {
 }
 
 class SubtitleAndAudioTrack extends HookWidget {
-  const SubtitleAndAudioTrack({super.key, required this.playerCore});
+  const SubtitleAndAudioTrack({super.key, required this.player});
 
-  final PlayerCore playerCore;
+  final MediaPlayer player;
 
   @override
   Widget build(BuildContext context) {
     final t = getLocalizations(context);
 
     List<ITab> tabs = [
-      ITab(title: t.subtitle, child: Subtitles(playerCore: playerCore)),
-      ITab(title: t.audio_track, child: AudioTracks(playerCore: playerCore)),
+      ITab(title: t.subtitle, child: SubtitleList(player: player)),
+      ITab(title: t.audio_track, child: AudioTrackList(player: player)),
     ];
 
     final tabController = useTabController(initialLength: tabs.length);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:iris/hooks/use_player_core.dart';
 import 'package:iris/info.dart';
+import 'package:iris/models/player.dart';
 import 'package:iris/utils/get_localizations.dart';
 import 'package:iris/utils/is_desktop.dart';
 import 'package:iris/utils/resize_window.dart';
@@ -11,11 +11,11 @@ class CustomAppBar extends HookWidget {
   const CustomAppBar({
     super.key,
     this.title,
-    required this.playerCore,
+    required this.player,
     this.actions,
   });
   final String? title;
-  final PlayerCore playerCore;
+  final MediaPlayer player;
   final List<Widget>? actions;
 
   @override
@@ -120,8 +120,7 @@ class CustomAppBar extends HookWidget {
                                 onPressed: () async {
                                   if (isFullScreen) {
                                     await windowManager.setFullScreen(false);
-                                    await resizeWindow(
-                                        playerCore.videoParams?.aspect);
+                                    await resizeWindow(player.aspect);
                                   } else {
                                     await windowManager.setFullScreen(true);
                                   }
@@ -141,8 +140,7 @@ class CustomAppBar extends HookWidget {
                                 onPressed: () async {
                                   if (isMaximized) {
                                     await windowManager.unmaximize();
-                                    await resizeWindow(
-                                        playerCore.videoParams?.aspect);
+                                    await resizeWindow(player.aspect);
                                   } else {
                                     await windowManager.maximize();
                                   }
@@ -167,7 +165,7 @@ class CustomAppBar extends HookWidget {
                     ),
                     IconButton(
                       onPressed: () async {
-                        await playerCore.saveProgress();
+                        await player.saveProgress();
                         windowManager.close();
                       },
                       icon: const Icon(Icons.close_rounded),

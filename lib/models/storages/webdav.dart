@@ -73,6 +73,7 @@ Future<List<FileItem>> getWebDAVFiles(
         path: [...path, '${file.name}'],
         isDir: file.isDir ?? false,
         size: file.size ?? 0,
+        lastModified: file.mTime,
         type: file.isDir ?? false
             ? ContentType.dir
             : checkContentType(file.name!),

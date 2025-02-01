@@ -31,18 +31,30 @@ Future<List<FileItem>> getLocalFiles(
     await for (final entity in entities) {
       final isDir = entity is Directory;
       int size = 0;
+      DateTime? lastModified;
       if (!isDir) {
         final file = File(entity.path);
         try {
           size = await file.length();
+          lastModified = await file.lastModified();
         } on PathAccessException catch (e) {
           logger(
-              'PathAccessException when getting file size for ${entity.path}: $e, setting size to 0');
-          size = 0;
+              'PathAccessException when getting file info for ${entity.path}: $e');
         } catch (e) {
+          logger('Error getting file info for ${entity.path}: $e');
+        }
+      }
+
+      if (isDir) {
+        final dir = Directory(entity.path);
+        try {
+          final stat = await dir.stat();
+          lastModified = stat.modified;
+        } on PathAccessException catch (e) {
           logger(
-              'Error getting file size for ${entity.path}: $e, setting size to 0');
-          size = 0;
+              'PathAccessException when getting directory info for ${entity.path}: $e');
+        } catch (e) {
+          logger('Error getting directory info for ${entity.path}: $e');
         }
       }
 
@@ -60,6 +72,7 @@ Future<List<FileItem>> getLocalFiles(
           path: [...path, p.basename(entity.path)],
           isDir: isDir,
           size: size,
+          lastModified: lastModified,
           type: isDir
               ? ContentType.dir
               : checkContentType(p.basename(entity.path)),
@@ -70,7 +83,7 @@ Future<List<FileItem>> getLocalFiles(
     return [];
   }
 
-  return filesSort(files, true);
+  return files;
 }
 
 Future<List<LocalStorage>> getLocalStorages(
@@ -143,8 +156,9 @@ Future<PlayQueueState?> getLocalPlayQueue(List<String> filePath) async {
     name: filePath.last,
     basePath: dirPath,
   ).getFiles(dirPath);
+  final List<FileItem> sortedFiles = filesSort(files: files);
   final List<FileItem> filteredFiles =
-      filesFilter(files, [ContentType.video, ContentType.audio]);
+      filesFilter(sortedFiles, [ContentType.video, ContentType.audio]);
   final List<PlayQueueItem> playQueue = filteredFiles
       .asMap()
       .entries

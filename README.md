@@ -10,7 +10,7 @@ English | [中文](./README_CN.md)
 
 ## Features
 
-- [x] Base on [media-kit](https://github.com/media-kit/media-kit) supports multiple video formats
+- [x] Base on [Media Kit](https://github.com/media-kit/media-kit) | [FVP](https://github.com/wang-bin/fvp), supports multiple video formats
 - [x] Local storage and WebDAV support
 - [x] Switchable subtitle and audio track
 - [x] Playback queue support for random and repeat

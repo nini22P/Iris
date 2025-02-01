@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:iris/hooks/use_player_controller.dart';
-import 'package:iris/hooks/use_player_core.dart';
+import 'package:iris/models/player.dart';
 import 'package:iris/utils/format_duration_to_minutes.dart';
 
 class ControlBarSlider extends HookWidget {
   const ControlBarSlider({
     super.key,
-    required this.playerCore,
+    required this.player,
     required this.showControl,
     this.disabled = false,
   });
 
-  final PlayerCore playerCore;
+  final MediaPlayer player;
 
   final void Function() showControl;
   final bool disabled;
 
   @override
   Widget build(BuildContext context) {
-    final PlayerController playerController =
-        usePlayerController(context, playerCore);
     return ExcludeFocus(
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
@@ -29,7 +26,7 @@ class ControlBarSlider extends HookWidget {
             Visibility(
               visible: !disabled,
               child: Text(
-                formatDurationToMinutes(playerCore.position),
+                formatDurationToMinutes(player.position),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 2,
@@ -58,12 +55,12 @@ class ControlBarSlider extends HookWidget {
                         trackHeight: 3,
                       ),
                       child: Slider(
-                        value: playerCore.buffer.inSeconds.toDouble() >
-                                playerCore.duration.inSeconds.toDouble()
+                        value: player.buffer.inSeconds.toDouble() >
+                                player.duration.inSeconds.toDouble()
                             ? 0
-                            : playerCore.buffer.inSeconds.toDouble(),
+                            : player.buffer.inSeconds.toDouble(),
                         min: 0,
-                        max: playerCore.duration.inSeconds.toDouble(),
+                        max: player.duration.inSeconds.toDouble(),
                         onChanged: null,
                       ),
                     ),
@@ -93,24 +90,22 @@ class ControlBarSlider extends HookWidget {
                       trackHeight: 4,
                     ),
                     child: Slider(
-                      value: playerCore.position.inSeconds.toDouble() >
-                              playerCore.duration.inSeconds.toDouble()
+                      value: player.position.inSeconds.toDouble() >
+                              player.duration.inSeconds.toDouble()
                           ? 0
-                          : playerCore.position.inSeconds.toDouble(),
+                          : player.position.inSeconds.toDouble(),
                       min: 0,
-                      max: playerCore.duration.inSeconds.toDouble(),
+                      max: player.duration.inSeconds.toDouble(),
                       onChangeStart: (value) {
-                        playerCore.updateSeeking(true);
+                        player.updateSeeking(true);
                       },
                       onChanged: (value) {
                         showControl();
-                        playerCore
-                            .updatePosition(Duration(seconds: value.toInt()));
+                        player.updatePosition(Duration(seconds: value.toInt()));
                       },
                       onChangeEnd: (value) async {
-                        await playerController
-                            .seekTo(Duration(seconds: value.toInt()));
-                        playerCore.updateSeeking(false);
+                        await player.seekTo(Duration(seconds: value.toInt()));
+                        player.updateSeeking(false);
                       },
                     ),
                   ),
@@ -120,7 +115,7 @@ class ControlBarSlider extends HookWidget {
             Visibility(
               visible: !disabled,
               child: Text(
-                formatDurationToMinutes(playerCore.duration),
+                formatDurationToMinutes(player.duration),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 2,

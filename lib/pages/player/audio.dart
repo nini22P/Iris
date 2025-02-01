@@ -1,17 +1,16 @@
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:iris/hooks/use_player_core.dart';
+import 'package:iris/models/file.dart';
 
 class Audio extends HookWidget {
   const Audio({
     super.key,
-    required this.playerCore,
+    required this.cover,
   });
 
-  final PlayerCore playerCore;
+  final FileItem? cover;
 
   @override
   Widget build(BuildContext context) {
@@ -22,16 +21,16 @@ class Audio extends HookWidget {
             color: Colors.grey[800],
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
-            child: playerCore.cover != null
-                ? playerCore.cover?.storageId == 'local'
+            child: cover != null
+                ? cover?.storageId == 'local'
                     ? Image.file(
-                        File(playerCore.cover!.uri),
+                        File(cover!.uri),
                         fit: BoxFit.cover,
                       )
                     : Image.network(
-                        playerCore.cover!.uri,
-                        headers: playerCore.cover!.auth != null
-                            ? {'authorization': playerCore.cover!.auth!}
+                        cover!.uri,
+                        headers: cover!.auth != null
+                            ? {'authorization': cover!.auth!}
                             : null,
                         fit: BoxFit.cover,
                       )
@@ -53,16 +52,16 @@ class Audio extends HookWidget {
                 height: MediaQuery.of(context).size.height / 2,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: playerCore.cover != null
-                      ? playerCore.cover!.storageId == 'local'
+                  child: cover != null
+                      ? cover!.storageId == 'local'
                           ? Image.file(
-                              File(playerCore.cover!.uri),
+                              File(cover!.uri),
                               fit: BoxFit.contain,
                             )
                           : Image.network(
-                              playerCore.cover!.uri,
-                              headers: playerCore.cover!.auth != null
-                                  ? {'authorization': playerCore.cover!.auth!}
+                              cover!.uri,
+                              headers: cover!.auth != null
+                                  ? {'authorization': cover!.auth!}
                                   : null,
                               fit: BoxFit.contain,
                             )

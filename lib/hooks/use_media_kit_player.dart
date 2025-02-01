@@ -1,75 +1,63 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_zustand/flutter_zustand.dart';
-import 'package:collection/collection.dart';
 import 'package:iris/models/file.dart';
+import 'package:iris/models/player.dart';
 import 'package:iris/models/progress.dart';
-import 'package:iris/models/storages/storage.dart';
 import 'package:iris/models/store/app_state.dart';
 import 'package:iris/store/use_app_store.dart';
 import 'package:iris/store/use_history_store.dart';
 import 'package:iris/store/use_play_queue_store.dart';
-import 'package:iris/store/use_storage_store.dart';
-import 'package:iris/utils/files_filter.dart';
 import 'package:iris/utils/logger.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:path_provider/path_provider.dart';
 
-enum MediaType {
-  video,
-  audio,
-}
-
-class PlayerCore {
-  final Player player;
-  final SubtitleTrack subtitle;
-  final List<SubtitleTrack> subtitles;
-  final List<Subtitle> externalSubtitles;
-  final AudioTrack audio;
-  final List<AudioTrack> audios;
-  final bool playing;
-  final VideoParams? videoParams;
-  final AudioParams? audioParams;
-  final MediaType? mediaType;
-  final Duration position;
-  final Duration duration;
-  final Duration buffer;
-  final bool seeking;
-  final bool completed;
-  final double rate;
-  final FileItem? cover;
-  final void Function(Duration) updatePosition;
-  final void Function(bool) updateSeeking;
-  final Future<void> Function() saveProgress;
-
-  PlayerCore(
-    this.player,
-    this.subtitle,
-    this.subtitles,
-    this.externalSubtitles,
-    this.audio,
-    this.audios,
-    this.playing,
-    this.videoParams,
-    this.audioParams,
-    this.mediaType,
-    this.position,
-    this.duration,
-    this.buffer,
-    this.seeking,
-    this.completed,
-    this.rate,
-    this.cover,
-    this.updatePosition,
-    this.updateSeeking,
-    this.saveProgress,
+MediaKitPlayer useMediaKitPlayer(BuildContext context) {
+  final player = useMemoized(
+    () => Player(
+      configuration: const PlayerConfiguration(
+        libass: true,
+      ),
+    ),
   );
-}
 
-PlayerCore usePlayerCore(BuildContext context, Player player) {
-  final localStorages =
-      useStorageStore().select(context, (state) => state.localStorages);
-  final storages = useStorageStore().select(context, (state) => state.storages);
+  final controller = useMemoized(() => VideoController(player));
+
+  useEffect(() {
+    () async {
+      player.setSubtitleTrack(SubtitleTrack.no());
+
+      if (Platform.isAndroid) {
+        NativePlayer nativePlayer = player.platform as NativePlayer;
+
+        final appSupportDir = await getApplicationSupportDirectory();
+        final String fontsDir = "${appSupportDir.path}/fonts";
+
+        final Directory fontsDirectory = Directory(fontsDir);
+        if (!await fontsDirectory.exists()) {
+          await fontsDirectory.create(recursive: true);
+          logger('fonts directory created');
+        }
+
+        final File file = File("$fontsDir/NotoSansCJKsc-Medium.otf");
+        if (!await file.exists()) {
+          final ByteData data =
+              await rootBundle.load("assets/fonts/NotoSansCJKsc-Medium.otf");
+          final Uint8List buffer = data.buffer.asUint8List();
+          await file.create(recursive: true);
+          await file.writeAsBytes(buffer);
+          logger('NotoSansCJKsc-Medium.otf copied');
+        }
+
+        await nativePlayer.setProperty("sub-fonts-dir", fontsDir);
+        await nativePlayer.setProperty("sub-font", "NotoSansCJKsc-Medium");
+      }
+    }();
+    return player.dispose;
+  }, []);
 
   final List<PlayQueueItem> playQueue =
       usePlayQueueStore().select(context, (state) => state.playQueue);
@@ -97,7 +85,7 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
 
   bool playing = useStream(player.stream.playing).data ?? false;
   VideoParams? videoParams = useStream(player.stream.videoParams).data;
-  AudioParams? audioParams = useStream(player.stream.audioParams).data;
+  // AudioParams? audioParams = useStream(player.stream.audioParams).data;
   ValueNotifier<Duration> position = useState(Duration.zero);
   Duration duration = useStream(player.stream.duration).data ?? Duration.zero;
   Duration buffer = useStream(player.stream.buffer).data ?? Duration.zero;
@@ -123,10 +111,6 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
           (subtitle) => subtitles.any((item) => item.title == subtitle.name)),
       [currentFile?.subtitles, subtitles]);
 
-  final MediaType? mediaType = useMemoized(
-      () => videoParams?.aspect != null ? MediaType.video : MediaType.audio,
-      [videoParams?.aspect]);
-
   final positionStream = useStream(player.stream.position);
 
   if (positionStream.hasData) {
@@ -134,36 +118,6 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
       position.value = positionStream.data!;
     }
   }
-
-  final List<String> dir = useMemoized(
-    () => currentFile == null || currentFile.path.isEmpty
-        ? []
-        : ([...currentFile.path]..removeLast()),
-    [currentFile],
-  );
-
-  final Storage? storage = useMemoized(
-      () => currentFile == null
-          ? null
-          : [...localStorages, ...storages].firstWhereOrNull(
-              (storage) => storage.id == currentFile.storageId),
-      [currentFile, localStorages, storages]);
-
-  final getCover = useMemoized(() async {
-    if (currentFile?.type != ContentType.audio) return null;
-
-    final files = await storage?.getFiles(dir);
-
-    if (files == null) return null;
-
-    final images = filesFilter(files, [ContentType.image]);
-
-    return images.firstWhereOrNull(
-            (image) => image.name.split('.').first.toLowerCase() == 'cover') ??
-        images.firstOrNull;
-  }, [currentFile, dir]);
-
-  final cover = useFuture(getCover).data;
 
   useEffect(() {
     if (currentFile == null || playQueue.isEmpty) {
@@ -183,7 +137,8 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
         if (Platform.isAndroid && currentFile.uri.startsWith('content://')) {
           return;
         }
-        logger('Save progress: ${currentFile.name}');
+        logger(
+            'Save progress: ${currentFile.name}, position: ${player.state.position}, duration: ${player.state.duration}');
         useHistoryStore().add(Progress(
           dateTime: DateTime.now().toUtc(),
           position: player.state.position,
@@ -205,7 +160,6 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
         Progress? progress = history[currentFile.getID()];
         if (progress != null) {
           if (!alwaysPlayFromBeginning &&
-              progress.duration.inMilliseconds == duration.inMilliseconds &&
               (progress.duration.inMilliseconds -
                       progress.position.inMilliseconds) >
                   5000) {
@@ -271,7 +225,8 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
       if (Platform.isAndroid && currentFile.uri.startsWith('content://')) {
         return;
       }
-      logger('Save progress: ${currentFile.name}');
+      logger(
+          'Save progress: ${currentFile.name}, position: ${player.state.position}, duration: ${player.state.duration}');
       useHistoryStore().add(Progress(
         dateTime: DateTime.now().toUtc(),
         position: player.state.position,
@@ -281,26 +236,60 @@ PlayerCore usePlayerCore(BuildContext context, Player player) {
     }
   }
 
-  return PlayerCore(
-    player,
-    subtitle,
-    subtitles,
-    externalSubtitles ?? [],
-    audio,
-    audios,
-    playing,
-    videoParams,
-    audioParams,
-    mediaType,
-    duration == Duration.zero ? Duration.zero : position.value,
-    duration,
-    duration == Duration.zero ? Duration.zero : buffer,
-    seeking.value,
-    completed,
-    rate,
-    cover,
-    updatePosition,
-    updateSeeking,
-    saveProgress,
+  useEffect(() => saveProgress, []);
+
+  Future<void> play() async {
+    await useAppStore().updateAutoPlay(true);
+    await player.play();
+  }
+
+  Future<void> pause() async {
+    await useAppStore().updateAutoPlay(false);
+    await player.pause();
+  }
+
+  Future<void> seekTo(Duration newPosition) async => newPosition.inSeconds < 0
+      ? await player.seek(Duration.zero)
+      : newPosition.inSeconds > duration.inSeconds
+          ? await player.seek(duration)
+          : await player.seek(newPosition);
+
+  Future<void> backward(int seconds) async {
+    await seekTo(Duration(seconds: position.value.inSeconds - seconds));
+  }
+
+  Future<void> forward(int seconds) async {
+    await seekTo(Duration(seconds: position.value.inSeconds + seconds));
+  }
+
+  Future<void> updateRate(double value) async =>
+      player.state.rate == value ? null : await player.setRate(value);
+
+  return MediaKitPlayer(
+    player: player,
+    controller: controller,
+    subtitle: subtitle,
+    subtitles: subtitles,
+    externalSubtitles: externalSubtitles ?? [],
+    audio: audio,
+    audios: audios,
+    isPlaying: playing,
+    position: duration == Duration.zero ? Duration.zero : position.value,
+    duration: duration,
+    buffer: duration == Duration.zero ? Duration.zero : buffer,
+    seeking: seeking.value,
+    rate: rate,
+    aspect: videoParams?.aspect,
+    width: videoParams?.w?.toDouble(),
+    height: videoParams?.h?.toDouble(),
+    updatePosition: updatePosition,
+    updateSeeking: updateSeeking,
+    saveProgress: saveProgress,
+    play: play,
+    pause: pause,
+    backward: backward,
+    forward: forward,
+    updateRate: updateRate,
+    seekTo: seekTo,
   );
 }

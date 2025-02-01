@@ -10,7 +10,7 @@
 
 ## 特性
 
-- [x] 基于 [media-kit](https://github.com/media-kit/media-kit) 可播放多种视频格式
+- [x] 基于 [Media Kit](https://github.com/media-kit/media-kit) | [FVP](https://github.com/wang-bin/fvp)，可播放多种视频格式
 - [x] 支持本地存储、WebDAV
 - [x] 可切换字幕和音轨
 - [x] 播放队列支持随机和重复

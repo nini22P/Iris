@@ -1,3 +1,15 @@
+## v1.3.0
+
+### Changelog
+
+* Add  [FVP](https://github.com/wang-bin/fvp) player backend (Experimental, with unknown bugs)
+* Add file sort
+
+### 更新日志
+* 添加 [FVP](https://github.com/wang-bin/fvp) 播放器后端（实验性，有未知bug）
+* 添加文件排序
+
+
 ## v1.2.1
 
 ### Changelog

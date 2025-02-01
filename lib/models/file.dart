@@ -30,6 +30,7 @@ abstract class FileItem implements _$FileItem {
     @Default([]) List<String> path,
     @Default(false) bool isDir,
     @Default(0) int size,
+    DateTime? lastModified,
     @Default(ContentType.video) ContentType type,
     String? auth,
     @Default([]) List<Subtitle> subtitles,

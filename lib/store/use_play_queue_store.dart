@@ -10,6 +10,7 @@ import 'package:iris/store/persistent_store.dart';
 import 'package:iris/globals.dart' as globals;
 import 'package:iris/store/use_app_store.dart';
 import 'package:iris/utils/check_content_type.dart';
+import 'package:iris/utils/get_shuffle_play_queue.dart';
 import 'package:iris/utils/is_desktop.dart';
 import 'package:iris/utils/logger.dart';
 import 'package:iris/utils/path_conv.dart';
@@ -95,6 +96,31 @@ class PlayQueueStore extends PersistentStore<PlayQueueState> {
     }
     await save(state);
   }
+
+  Future<void> previous() async {
+    final int currentPlayIndex = state.playQueue
+        .indexWhere((element) => element.index == state.currentIndex);
+    if (currentPlayIndex <= 0) return;
+    await updateCurrentIndex(state.playQueue[currentPlayIndex - 1].index);
+  }
+
+  Future<void> next() async {
+    final int currentPlayIndex = state.playQueue
+        .indexWhere((element) => element.index == state.currentIndex);
+    if (currentPlayIndex >= state.playQueue.length - 1) return;
+    await updateCurrentIndex(state.playQueue[currentPlayIndex + 1].index);
+  }
+
+  Future<void> shuffle() async => update(
+        playQueue: getShufflePlayQueue(state.playQueue, state.currentIndex),
+        index: state.currentIndex,
+      );
+
+  Future<void> sort() async => update(
+        playQueue: [...state.playQueue]
+          ..sort((a, b) => a.index.compareTo(b.index)),
+        index: state.currentIndex,
+      );
 
   @override
   Future<PlayQueueState?> load() async {
